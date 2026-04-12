@@ -9,9 +9,9 @@ const Navbar = () => {
 
   const handleClick = () => {
     if (token) {
+      toast.success("Successfully Loggedout")
       localStorage.removeItem("token");
       navigate("/");
-      toast.success("Successfully Loggedout")
       window.location.reload();
     } else {
       navigate("/login");

@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const API = import.meta.env.VITE_API_URL
+
 const instance = axios.create({
-  baseURL: "http://localhost:5010/api"
+  baseURL: API
 });
 
 // 🔥 interceptor yaha lagao
