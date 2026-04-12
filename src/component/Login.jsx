@@ -2,7 +2,9 @@ import axios from "axios";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+import { toast } from "react-toastify";
+
+const Login = ({setName}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -16,11 +18,13 @@ const Login = () => {
       const response = await axios.post(`${API}user/login`,{
         email,password
       })
-      console.log(response.data);
+      setName(response.data.data.userName);
       localStorage.setItem("token", response.data.data.token);
+      toast.success("Login Successful ✅");
       navigate("/");
     } catch(error) {
       console.error("Error logging in:", error);
+      toast.error("Login Failed ❌");
     }
     console.log(email, password);
   };

@@ -1,173 +1,239 @@
-import React, { useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import { useSelector } from "react-redux";
+import React, { useState } from "react";
+import axios from "../utilis/axios";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Result = () => {
+  const location = useLocation();
+  const topic = location.state;
+    // console.log(topic)
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate()
   const { loading, error, data } = useSelector((state) => state.apiData);
-  const pdfRef = useRef();
+  // console.log("data", data)
 
-  const handleDownloadPDF = async () => {
-    const element = pdfRef.current;
-    const canvas = await html2canvas(element, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const imgWidth = 210;
-    const pageHeight = 297;
-    let imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
+  const parsedData = (() => {
+  if (!data.data?.reply) return null;
+  if (typeof data.data?.reply !== "string") return data;
+  try {
+    const cleaned = data.data?.reply
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error("JSON parse failed:", e);
+    return null;
+  }
+})();
 
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+  const [answers, setAnswers] = useState({
+    mcq: {},
+    short: {},
+    reasoning: {}
+  });
 
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    pdf.save("question-paper.pdf");
+  // ✅ Handlers
+  const handleMcqChange = (index, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      mcq: { ...prev.mcq, [index]: value }
+    }));
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-gray-800">
-        <div className="bg-white/5 backdrop-blur-xl border border-gray-700 px-10 py-8 rounded-2xl text-center shadow-2xl">
-          <div className="animate-spin w-10 h-10 border-4 border-gray-500 border-t-white rounded-full mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-white">
-            Generating Your Question Paper...
-          </p>
-          <p className="text-gray-400 mt-2 text-sm">
-            Please wait, AI is creating your test ⚡
-          </p>
-        </div>
-      </div>
+  const handleShortChange = (index, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      short: { ...prev.short, [index]: value }
+    }));
+  };
+
+  const handleReasoningChange = (index, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      reasoning: { ...prev.reasoning, [index]: value }
+    }));
+  };
+
+const handleSubmit = async () => {
+  try {
+    setSubmitting(true);
+
+    const token = localStorage.getItem("token")
+    console.log(token)
+
+    // 🔥 STEP 1: AI evaluation
+    const response = await axios.post(
+      "/submit-test",
+      {
+        questions: parsedData,
+        userAnswers: answers
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}` // ← header add karo
+        }
+      }
     );
-  }
 
-  if (error) {
-    return (
-      <div className="text-center mt-20 text-red-500 text-lg">
-        Error: {error}
-      </div>
-    );
-  }
+    console.log("Evaluation:", response.data.data);
 
-  if (!data) {
-    return (
-      <div className="text-center mt-20 text-white text-lg">
-        No Data Found
-      </div>
-    );
-  }
-
-  const lines = data.split("\n").filter((l) => l.trim() !== "");
-
-  // ✅ collect answer lines separately
-  const answerLines = lines.filter((line) =>
-    line.toLowerCase().includes("correct answer") ||
-    line.toLowerCase().includes("answer:")
+    // 🔥 STEP 2: SAVE TEST (ADD THIS 👇)
+    await axios.post("/save-test", {
+      userId: data.data.id, // baad me token se
+      topic: topic, // baad me dynamic
+      questions: parsedData,
+      userAnswers: answers,
+      result: response.data.data
+    },{
+        headers: {
+          Authorization: `Bearer ${token}` // ← header add karo
+        }
+      }
   );
+  toast.success("Test Submitted ✅")
+    // 🔥 STEP 3: Navigate
+    navigate("/Result-evaluate", {
+      state: response.data.data
+    });
 
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+  if (loading)
   return (
-    <div className="min-h-screen px-6 py-10 bg-gradient-to-br from-black via-gray-900 to-gray-800">
-
-      {/* HEADER */}
-      <div className="max-w-4xl mx-auto text-center mb-10 text-white">
-        <h1 className="text-4xl font-bold mb-2">📄 Question Paper</h1>
-        <p className="text-gray-400">Generated by AI</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-gray-800">
+      <div className="bg-white/10 backdrop-blur-xl border border-gray-700 px-10 py-8 rounded-2xl text-center shadow-2xl">
+        <div className="w-10 h-10 border-4 border-gray-500 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-xl font-semibold text-white">
+          Generating Your Test...
+        </p>
+        <p className="text-gray-400 mt-2 text-sm">
+          AI is preparing your questions ⚡
+        </p>
       </div>
-
-      {/* WHITE PAPER */}
-      <div
-        ref={pdfRef}
-        className="max-w-4xl mx-auto bg-white text-black p-8 rounded-lg shadow-2xl"
-      >
-        <div className="space-y-4">
-          {lines.map((line, i) => {
-            const trimmed = line.trim();
-
-            // ✅ skip correct answer lines — shown in answers div below
-            if (
-              trimmed.toLowerCase().includes("correct answer") ||
-              trimmed.toLowerCase().includes("answer:")
-            ) return null;
-
-            // skip option lines — rendered inside question block
-            if (/^[A-D][).]\s/.test(trimmed)) return null;
-
-            // section heading (**, ##, or all caps short line)
-            if (
-              trimmed.startsWith("##") ||
-              trimmed.startsWith("**") ||
-              (trimmed === trimmed.toUpperCase() && trimmed.length < 60)
-            ) {
-              return (
-                <h2
-                  key={i}
-                  className="text-lg font-bold mt-6 mb-2 border-b pb-1"
-                >
-                  {trimmed.replace(/[#*]/g, "").trim()}
-                </h2>
-              );
-            }
-
-            // numbered question — render with options below it
-            if (/^\d+[.)]\s/.test(trimmed)) {
-              const options = [];
-              let j = i + 1;
-              while (
-                j < lines.length &&
-                /^[A-D][).]\s/.test(lines[j].trim())
-              ) {
-                options.push(lines[j].trim());
-                j++;
-              }
-
-              return (
-                <div key={i} className="mb-4">
-                  <p className="font-medium">{trimmed}</p>
-                  {options.length > 0 && (
-                    <div className="ml-4 mt-2 grid grid-cols-2 gap-1 text-sm">
-                      {options.map((opt, oi) => (
-                        <span key={oi}>{opt}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            return <p key={i} className="text-sm">{trimmed}</p>;
-          })}
-        </div>
-      </div>
-
-      {/* DOWNLOAD BUTTON */}
-      <div className="max-w-4xl mx-auto mt-6 flex justify-end">
-        <button
-          onClick={handleDownloadPDF}
-          className="bg-white text-black font-semibold px-6 py-3 rounded-lg hover:bg-gray-200 transition"
-        >
-          📄 Download PDF
-        </button>
-      </div>
-
-      {/* ANSWERS SECTION */}
-      {answerLines.length > 0 && (
-        <div className="max-w-4xl mx-auto mt-6 bg-white text-black p-6 rounded-lg shadow-xl">
-          <h2 className="text-xl font-bold mb-4">✅ Answers</h2>
-          {answerLines.map((ans, i) => (
-            <p key={i} className="mb-2 text-sm">
-              {ans}
-            </p>
-          ))}
-        </div>
-      )}
     </div>
   );
+
+if (error)
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-gray-800">
+      <div className="bg-red-500/10 border border-red-500 px-8 py-6 rounded-xl text-center shadow-xl">
+        <h2 className="text-xl font-semibold text-red-400 mb-2">
+          Something went wrong ⚠️
+        </h2>
+        <p className="text-red-300 text-sm">{error}</p>
+      </div>
+    </div>
+  );
+
+if (!parsedData)
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-gray-800">
+      <div className="bg-white/10 border border-gray-700 px-8 py-6 rounded-xl text-center shadow-xl">
+        <h2 className="text-xl font-semibold text-white mb-2">
+          No Test Found 😕
+        </h2>
+        <p className="text-gray-400 text-sm">
+          Please generate a test first.
+        </p>
+      </div>
+    </div>
+  );
+
+return (
+  <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white p-6">
+
+    <div className="max-w-5xl mx-auto bg-white text-black p-8 rounded-2xl shadow-2xl">
+
+      <h1 className="text-3xl font-bold text-center mb-6">
+        AI Generated Test
+      </h1>
+
+      {/* MCQs */}
+      <h2 className="text-xl font-semibold mb-4">Multiple Choice Questions</h2>
+
+      <div className="grid grid-cols-2 gap-6 ">
+        {parsedData.mcqs?.map((q, i) => (
+          <div key={i} className="border p-4 rounded-lg shadow-sm hover:shadow-md transition focus:ring-2 focus:ring-black">
+            <p className="font-semibold mb-2">
+              {i + 1}. {q.question}
+            </p>
+
+            {q.options.map((opt, idx) => (
+              <label key={idx} className="flex items-center mt-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`mcq-${i}`}
+                  value={opt}
+                  className="mr-2"
+                  onChange={(e) => handleMcqChange(i, e.target.value)}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Short Questions */}
+      <h2 className="text-xl font-semibold mt-8 mb-4">Short Answer Questions</h2>
+
+      {parsedData.shortQuestions?.map((q, i) => (
+        <div key={i} className="mb-6">
+          <p className="font-semibold mb-2">
+            {i + 6}. {q}
+          </p>
+
+          <textarea
+            className="w-full border border-gray-300 p-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
+            rows={3}
+            placeholder="Write your answer..."
+            onChange={(e) => handleShortChange(i, e.target.value)}
+          />
+        </div>
+      ))}
+
+      {/* Reasoning */}
+      <h2 className="text-xl font-semibold mt-8 mb-4">
+        Reasoning Questions
+      </h2>
+
+      {parsedData.reasoningQuestions?.map((q, i) => (
+        <div key={i} className="mb-6">
+          <p className="font-semibold mb-2">
+            {i + 9}. {q}
+          </p>
+
+          <textarea
+            className="w-full border border-gray-300 p-3 rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-black"
+            rows={4}
+            placeholder="Explain your answer..."
+            onChange={(e) => handleReasoningChange(i, e.target.value)}
+          />
+        </div>
+      ))}
+
+      {/* Submit Button */}
+      <div className="flex justify-end mt-8">
+        <button
+  onClick={handleSubmit}
+  disabled={submitting}
+  className="bg-black text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
+>
+  {submitting ? "Evaluating..." : "Submit Test"}
+</button>
+      </div>
+
+    </div>
+  </div>
+);
 };
 
 export default Result;

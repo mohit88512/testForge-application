@@ -1,14 +1,21 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Navbar = () => {
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const value = e.target.value;
+  const token = localStorage.getItem("token");
 
-    if (value === "login") navigate("/login");
-    if (value === "signup") navigate("/signup");
+  const handleClick = () => {
+    if (token) {
+      localStorage.removeItem("token");
+      navigate("/");
+      toast.success("Successfully Loggedout")
+      window.location.reload();
+    } else {
+      navigate("/login");
+    }
   };
 
   return (
@@ -28,16 +35,28 @@ const Navbar = () => {
           <a href="#" className="hover:text-white">About</a>
         </div>
 
-        {/* SIMPLE SELECT */}
-        <select
-          onChange={handleChange}
-          className="bg-gray-800 text-white px-4 py-2 rounded-xl border border-gray-600"
-          defaultValue=""
-        >
-          <option value="" disabled>Account</option>
-          <option value="login">Login</option>
-          <option value="signup">Signup</option>
-        </select>
+        {/* Right Side Buttons */}
+        <div className="flex items-center gap-3">
+
+          {/* ✅ Dashboard Button (only if logged in) */}
+          {token && (
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="bg-white text-black px-5 py-2 rounded-xl font-medium hover:bg-gray-200 transition"
+            >
+              Dashboard
+            </button>
+          )}
+
+          {/* Login / Logout */}
+          <button
+            onClick={handleClick}
+            className="bg-gray-800 text-white px-5 py-2 rounded-xl border border-gray-600 hover:bg-gray-700 transition"
+          >
+            {token ? "Logout" : "Login"}
+          </button>
+
+        </div>
 
       </div>
     </nav>

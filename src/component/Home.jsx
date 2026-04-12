@@ -24,7 +24,9 @@ const Home = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     dispatch(generateTest({topic, content, difficulty}));
-    navigate("/result")
+    navigate("/result",{
+      state: topic
+    })
     console.log(topic, content, difficulty);
   };
 

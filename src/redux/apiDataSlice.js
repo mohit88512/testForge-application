@@ -1,22 +1,25 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
+import axios from "../utilis/axios";
+import { toast } from "react-toastify";
 
-const API_URL = import.meta.env.VITE_API_URL;
+// const API_URL = import.meta.env.VITE_API_URL;
 
 export const generateTest = createAsyncThunk("api/generateTest",
   async (payload)=>{
     try{
       const {topic, content, difficulty} = payload;
-      const response = await axios.post(`${API_URL}generate`,{
+      const response = await axios.post(`/generate`,{
         topic,content,difficulty
       },{
         headers:{
           Authorization: `Bearer ${localStorage.getItem("token")}`
         }
       })
-      return response.data.data
+      toast.success("Test Generated ✅")
+      return response.data
     }catch(error){
       console.error("Error generating test:", error);
+      toast.error("Somethinng went wrong ⚠️")
       throw error;
     }
   }

@@ -1,11 +1,14 @@
 import axios from "axios";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+
 
   const API = import.meta.env.VITE_API_URL
 
@@ -18,9 +21,11 @@ const Signup = () => {
         name,email,password
       })
       console.log(response.data);
+      toast.success("Successfully Signedup ✅")
       navigate("/login");
     } catch(error) {
       console.error("Error signing up:", error);
+      toast.error("Signup Failed ❌")
     }
 
     console.log(name, email, password);
