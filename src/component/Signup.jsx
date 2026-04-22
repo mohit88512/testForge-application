@@ -58,13 +58,22 @@ const Signup = () => {
             className="w-full p-3 rounded-lg bg-black/40 border border-gray-600 text-white placeholder-gray-400 focus:outline-none"
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 rounded-lg bg-black/40 border border-gray-600 text-white placeholder-gray-400 focus:outline-none"
-          />
+          <div className="relative w-full">
+            <input
+              type={flag ? "password" : "text"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 pr-10 rounded-lg bg-black/40 border border-gray-600 text-white placeholder-gray-400 focus:outline-none"
+            />
+
+            <span
+              onClick={() => setFlag(!flag)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-white"
+            >
+              {flag ? "🫣" : "😀"}
+            </span>
+          </div>
 
           <button
             type="submit"
