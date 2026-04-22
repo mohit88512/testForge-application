@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 const Login = ({setName}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [flag,setFlag]=useState(false)
 
   const API = import.meta.env.VITE_API_URL
 
