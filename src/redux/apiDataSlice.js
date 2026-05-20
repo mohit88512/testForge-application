@@ -18,8 +18,8 @@ export const generateTest = createAsyncThunk("api/generateTest",
       toast.success("Test Generated ✅")
       return response.data
     }catch(error){
-      console.error("Error generating test:", error);
-      toast.error("Somethinng went wrong ⚠️")
+      console.error("Error generating test:", error.response?.data?.message);
+      toast.error(error.response?.data?.message || "Login first ⚠️")
       throw error;
     }
   }

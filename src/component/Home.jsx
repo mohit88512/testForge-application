@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { generateTest } from "../redux/apiDataSlice";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,11 @@ const Home = () => {
   const navigate = useNavigate();
 
   const formRef = useRef(null);
+
+  useEffect(() => {
+  window.addEventListener("scrollToForm", scrollToForm);
+  return () => window.removeEventListener("scrollToForm", scrollToForm);
+}, []);
 
   const handleDifficultyChange = (level) => {
     setDifficulty(level);

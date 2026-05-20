@@ -1,11 +1,35 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const Navbar = () => {
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
+
+  const location = useLocation();
+
+const handleGenerate = () => {
+  if (location.pathname !== "/") {
+    navigate("/");
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("scrollToForm"));
+    }, 100);
+  } else {
+    window.dispatchEvent(new CustomEvent("scrollToForm"));
+  }
+};
+
+const handleAbout = () => {
+  if (location.pathname !== "/") {
+    navigate("/");
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("scrollToAbout"));
+    }, 100);
+  } else {
+    window.dispatchEvent(new CustomEvent("scrollToAbout"));
+  }
+};
 
   const handleClick = () => {
     if (token) {
@@ -31,8 +55,18 @@ const Navbar = () => {
         {/* Links */}
         <div className="hidden md:flex gap-8 text-gray-300">
           <a href="#" className="hover:text-white">Home</a>
-          <a href="#" className="hover:text-white">Generate</a>
-          <a href="#" className="hover:text-white">About</a>
+          <button
+  onClick={handleGenerate}
+  className="hover:text-white bg-transparent border-none cursor-pointer text-gray-300"
+>
+  Generate
+</button>
+          <button
+  onClick={handleAbout}
+  className="hover:text-white bg-transparent border-none cursor-pointer text-gray-300"
+>
+  About
+</button>
         </div>
 
         {/* Right Side Buttons */}

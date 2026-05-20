@@ -1,8 +1,17 @@
-import React from 'react'
+import React,{useRef, useEffect} from 'react'
 
 const About = () => {
+  const aboutRef = useRef(null);
+
+useEffect(() => {
+  const scrollToAbout = () => {
+    aboutRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  window.addEventListener("scrollToAbout", scrollToAbout);
+  return () => window.removeEventListener("scrollToAbout", scrollToAbout);
+}, []);
   return (
-    <div className="max-w-7xl mx-auto mt-32 grid md:grid-cols-2 gap-16 items-center">
+    <div ref={aboutRef} className="max-w-7xl mx-auto mt-32 grid md:grid-cols-2 gap-16 items-center">
 
   {/* LEFT IMAGE */}
   <div className="flex justify-center">

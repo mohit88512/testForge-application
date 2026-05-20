@@ -9,26 +9,31 @@ const Login = ({setName}) => {
   const [password, setPassword] = useState("");
   const [flag,setFlag]=useState(false)
 
+  const [loading, setLoading] = useState(false);
+
   const API = import.meta.env.VITE_API_URL
 
   const navigate = useNavigate();
 
   async function handleSubmit(e){
-    e.preventDefault();
-    try{
-      const response = await axios.post(`${API}user/login`,{
-        email,password
-      })
-      setName(response.data.data.userName);
-      localStorage.setItem("token", response.data.data.token);
-      toast.success("Login Successful ✅");
-      navigate("/");
-    } catch(error) {
-      console.error("Error logging in:", error);
-      toast.error("Login Failed ❌");
-    }
-    console.log(email, password);
-  };
+  e.preventDefault();
+  setLoading(true);  // ✅ add करो
+  try{
+    const response = await axios.post(`${API}user/login`,{
+      email,password
+    })
+    setName(response.data.data.userName);
+    localStorage.setItem("token", response.data.data.token);
+    toast.success("Login Successful ✅");
+    navigate("/");
+  } catch(error) {
+    console.error("Error logging in:", error.response.data.message);
+    toast.error(error.response.data.message || "Login Failed ❌");
+  } finally {
+    setLoading(false);  // ✅ add करो
+  }
+  console.log(email, password);
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-gray-800">
@@ -67,11 +72,20 @@ const Login = ({setName}) => {
           </div>
 
           <button
-            type="submit"
-            className="w-full bg-gray-800 hover:bg-gray-700 transition p-3 rounded-xl font-semibold text-white"
-          >
-            Login
-          </button>
+  type="submit"
+  disabled={loading}
+  className="w-full bg-gray-800 hover:bg-gray-700 transition p-3 rounded-xl font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed"
+>
+  {loading ? (
+    <span className="flex items-center justify-center gap-2">
+      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+      </svg>
+      Logging in...
+    </span>
+  ) : "Login"}
+</button>
 
         </form>
 
